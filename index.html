@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>when.</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .glitch-text {
+      font-size: clamp(2rem, 8vw, 6rem);
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc40, 0 0 30px #00ffcc20;
+      animation: flicker 3s infinite;
+      letter-spacing: 0.5em;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.3; }
+      94% { opacity: 1; }
+      96% { opacity: 0.5; }
+      97% { opacity: 1; }
+    }
+    .countdown {
+      margin-top: 2rem;
+      font-size: clamp(1rem, 4vw, 2rem);
+      color: #ff6b6b;
+      letter-spacing: 0.3em;
+    }
+    .phase { display: none; text-align: center; max-width: 500px; padding: 2rem; }
+    .phase.active { display: flex; flex-direction: column; align-items: center; }
+    .question { font-size: 1.5rem; margin-bottom: 2rem; color: #fff; }
+    .choices { display: flex; flex-direction: column; gap: 1rem; }
+    .choice {
+      background: transparent;
+      border: 1px solid #00ffcc;
+      color: #00ffcc;
+      padding: 1rem 2rem;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .choice:hover { background: #00ffcc20; transform: scale(1.05); }
+    .result { font-size: 1.2rem; line-height: 1.8; }
+    .hidden-count { display: none; }
+    .reveal-text { font-size: 1rem; color: #888; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+<div id="phase-countdown" class="phase active">
+  <div class="glitch-text">WHEN.</div>
+  <div class="countdown" id="timer">--:--:--:--</div>
+  <div class="reveal-text">the last second ticks away</div>
+</div>
+
+<div id="phase-choice" class="phase">
+  <div class="question">You've reached the end.<br>But something still doesn't add up.</div>
+  <div class="choices">
+    <button class="choice" onclick="showResult('follow')">Push forward anyway</button>
+    <button class="choice" onclick="showResult('wait')">Wait for the answer</button>
+    <button class="choice" onclick="showResult('leave')">Leave and forget</button>
+  </div>
+</div>
+
+<div id="phase-result" class="phase">
+  <div class="result" id="result-text"></div>
+</div>
+
+
+
+<script>
+  // Countdown target: April 30, 2026
+  const target = new Date('2026-04-30T00:00:00Z').getTime();
+
+  function updateTimer() {
+    const now = Date.now();
+    const diff = target - now;
+    if (diff <= 0) {
+      document.getElementById('timer').textContent = '00:00:00:00';
+      setTimeout(showChoice, 1000);
+      return;
+    }
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diff % (1000 * 60)) / 1000);
+    document.getElementById('timer').textContent =
+      String(d).padStart(2,'0') + ':' +
+      String(h).padStart(2,'0') + ':' +
+      String(m).padStart(2,'0') + ':' +
+      String(s).padStart(2,'0');
+  }
+
+  function showPhase(id) {
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+    document.getElementById('phase-' + id).classList.add('active');
+  }
+
+  function showChoice() {
+    showPhase('choice');
+  }
+
+  const results = {
+    follow: "Bold move.\n\nMost people don't push forward when the map is incomplete. That's exactly why it might work.\n\nThe countdown isn't a deadline. It's a signal.\n\nFollow @builtbyalfred — the pieces are falling into place.",
+    wait: "Patience is underrated.\n\nBut the answer doesn't come to those who wait. It comes to those who show up.\n\nFollow @builtbyalfred — we'll find out together.",
+    leave: "You came all this way to leave?\n\nFair enough. The door's always open.\n\nBut curiosity doesn't fade. It only sleeps.\n\n@builtbyalfred — in case you change your mind."
+  };
+
+  function showResult(key) {
+    document.getElementById('result-text').innerHTML = results[key].replace(/\n/g, '<br>');
+    showPhase('result');
+  }
+
+  // Init
+  updateTimer();
+  setInterval(updateTimer, 1000);
+
+  // Glitch sound via Web Audio API (no external file needed)
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const bufferSize = ctx.sampleRate * 0.5;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.3));
+        }
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.15;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        source.start();
+      } catch(e) {}
+    }, 800);
+  });
+</script>
+</body>
+</html>
